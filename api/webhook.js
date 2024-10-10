@@ -86,6 +86,12 @@ async function processWebhookData(data) {
           continue;
         }
 
+        // Check for duplicate date
+        if (existingDates.has(isoDate)) {
+          logger.warn(`Record with date "${isoDate}" already exists. Skipping record.`);
+          continue;
+        }
+
         const fields = {
           Date: isoDate,
           Quantity: record.qty,
