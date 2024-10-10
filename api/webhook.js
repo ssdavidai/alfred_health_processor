@@ -2,6 +2,8 @@ import { createLogger, transports, format } from 'winston';
 import axios from 'axios';
 import { DateTime } from 'luxon'; // Import Luxon
 
+// Cursor ran out of GPT-4o credits and it shows.
+
 // Configure winston logger
 const logger = createLogger({
   level: 'debug',
