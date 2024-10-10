@@ -272,104 +272,103 @@ function isSleepMetric(metricName) {
 
 // Main function to process webhook data
 async function processWebhookData(data) {
-  if (!Array.isArray(data)) {
-    logger.error('Invalid data format: expected an array.');
+  logger.info('Starting processWebhookData function');
+  if (!data || !Array.isArray(data.metrics)) {
+    logger.error('Invalid data format: expected data.metrics to be an array.');
     return;
   }
+
+  const metricsData = data.metrics;
 
   logger.info('Starting data processing...');
   try {
     let existingTables = await getExistingTables();
 
-    for (const entry of data) {
-      logger.info(`Processing entry: ${JSON.stringify(entry)}`);
-      const metrics = entry.metrics || [];
-      for (const metric of metrics) {
-        logger.info(`Processing metric: ${JSON.stringify(metric)}`);
-        const tableName = metric.name;
-        const units = metric.units;
-        const metricData = metric.data || [];
+    for (const metric of metricsData) {
+      logger.info(`Processing metric: ${JSON.stringify(metric)}`);
+      const tableName = metric.name;
+      const units = metric.units;
+      const metricData = metric.data || [];
 
-        if (!tableName) {
-          logger.warn('Metric name is missing. Skipping metric.');
+      if (!tableName) {
+        logger.warn('Metric name is missing. Skipping metric.');
+        continue;
+      }
+
+      // Check if table exists; create if it doesn't
+      if (!existingTables.includes(tableName)) {
+        logger.info(`Table "${tableName}" does not exist. Creating table.`);
+        await createTable(tableName, isSleepMetric(tableName));
+        existingTables.push(tableName);
+      } else {
+        logger.info(`Table "${tableName}" exists.`);
+      }
+
+      // Get existing dates to check for duplicates
+      const existingDates = await getExistingDates(tableName);
+
+      // Prepare records
+      const recordsToAdd = [];
+      for (const record of metricData) {
+        logger.info(`Processing record: ${JSON.stringify(record)}`);
+        const dateValue = record.date;
+        if (!dateValue) {
+          logger.warn('Record is missing "date". Skipping record.');
           continue;
         }
 
-        // Check if table exists; create if it doesn't
-        if (!existingTables.includes(tableName)) {
-          logger.info(`Table "${tableName}" does not exist. Creating table.`);
-          await createTable(tableName, isSleepMetric(tableName));
-          existingTables.push(tableName);
-        } else {
-          logger.info(`Table "${tableName}" exists.`);
+        // Convert dateValue to ISO 8601 format
+        const isoDate = convertToISODate(dateValue);
+        if (!isoDate) {
+          logger.warn(`Invalid date format for date "${dateValue}". Skipping record.`);
+          continue;
         }
 
-        // Get existing dates to check for duplicates
-        const existingDates = await getExistingDates(tableName);
+        const fields = {
+          Date: isoDate,
+          Quantity: record.qty,
+          Units: units,
+          Source: record.source || '',
+        };
 
-        // Prepare records
-        const recordsToAdd = [];
-        for (const record of metricData) {
-          logger.info(`Processing record: ${JSON.stringify(record)}`);
-          const dateValue = record.date;
-          if (!dateValue) {
-            logger.warn('Record is missing "date". Skipping record.');
-            continue;
+        // Include Min, Max, Avg if present
+        for (const stat of ['min', 'max', 'avg']) {
+          if (record[stat] !== undefined) {
+            fields[stat.charAt(0).toUpperCase() + stat.slice(1)] = record[stat];
+            logger.info(`Added field "${stat}": ${record[stat]}`);
           }
+        }
 
-          // Convert dateValue to ISO 8601 format
-          const isoDate = convertToISODate(dateValue);
-          if (!isoDate) {
-            logger.warn(`Invalid date format for date "${dateValue}". Skipping record.`);
-            continue;
-          }
+        // Include sleep-specific fields if applicable
+        if (isSleepMetric(tableName)) {
+          const sleepFields = [
+            'asleep', 'inbed', 'awake', 'core',
+            'deep', 'rem', 'sleep_start', 'sleep_end',
+            'inbed_start', 'inbed_end',
+          ];
 
-          const fields = {
-            Date: isoDate,
-            Quantity: record.qty,
-            Units: units,
-            Source: record.source || '',
-          };
-
-          // Include Min, Max, Avg if present
-          for (const stat of ['min', 'max', 'avg']) {
-            if (record[stat] !== undefined) {
-              fields[stat.charAt(0).toUpperCase() + stat.slice(1)] = record[stat];
-              logger.info(`Added field "${stat}": ${record[stat]}`);
+          for (const sleepField of sleepFields) {
+            if (record[sleepField] !== undefined) {
+              const fieldName = sleepField
+                .split('_')
+                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+              fields[fieldName] = record[sleepField];
+              logger.info(`Added sleep field "${fieldName}": ${record[sleepField]}`);
             }
           }
-
-          // Include sleep-specific fields if applicable
-          if (isSleepMetric(tableName)) {
-            const sleepFields = [
-              'asleep', 'inbed', 'awake', 'core',
-              'deep', 'rem', 'sleep_start', 'sleep_end',
-              'inbed_start', 'inbed_end',
-            ];
-
-            for (const sleepField of sleepFields) {
-              if (record[sleepField] !== undefined) {
-                const fieldName = sleepField
-                  .split('_')
-                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                  .join(' ');
-                fields[fieldName] = record[sleepField];
-                logger.info(`Added sleep field "${fieldName}": ${record[sleepField]}`);
-              }
-            }
-          }
-
-          recordsToAdd.push({ fields });
-          logger.info(`Record prepared for addition: ${JSON.stringify(fields)}`);
         }
 
-        // Create records in Airtable
-        if (recordsToAdd.length > 0) {
-          logger.info(`Adding ${recordsToAdd.length} new record(s) to table "${tableName}".`);
-          await createRecords(tableName, recordsToAdd);
-        } else {
-          logger.info(`No new records to add for metric "${tableName}".`);
-        }
+        recordsToAdd.push({ fields });
+        logger.info(`Record prepared for addition: ${JSON.stringify(fields)}`);
+      }
+
+      // Create records in Airtable
+      if (recordsToAdd.length > 0) {
+        logger.info(`Adding ${recordsToAdd.length} new record(s) to table "${tableName}".`);
+        await createRecords(tableName, recordsToAdd);
+      } else {
+        logger.info(`No new records to add for metric "${tableName}".`);
       }
     }
 
