@@ -239,7 +239,7 @@ async function processWebhookData(data) {
 
     for (const entry of data) {
       logger.info(`Processing entry: ${JSON.stringify(entry)}`);
-      const metrics = entry.data?.metrics || [];
+      const metrics = entry.metrics || [];
       for (const metric of metrics) {
         logger.info(`Processing metric: ${JSON.stringify(metric)}`);
         const tableName = metric.name;
