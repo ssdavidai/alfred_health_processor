@@ -324,7 +324,7 @@ async function processWebhookData(data) {
           continue;
         }
 
-        // Check for duplicate date
+        // Check for duplicate date and time
         if (existingDates.has(isoDate)) {
           logger.warn(`Record with date "${isoDate}" already exists. Skipping record.`);
           continue;
