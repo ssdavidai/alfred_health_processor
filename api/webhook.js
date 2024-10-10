@@ -367,6 +367,11 @@ function isSleepMetric(metricName) {
 
 // Function to convert date to ISO 8601 format
 function convertToISODate(dateStr) {
+  // Check if the date string is missing a time component
+  if (!dateStr.includes(' ')) {
+    dateStr += ' 00:00:00 +0200'; // Add default time and timezone
+  }
+
   // Parse the date string using Luxon
   const dt = DateTime.fromFormat(dateStr, 'yyyy-MM-dd HH:mm:ss ZZZ', { setZone: true });
   if (!dt.isValid) {
