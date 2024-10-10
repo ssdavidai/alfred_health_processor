@@ -30,19 +30,24 @@ async function processWebhookData(data) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
+  if (req.method === 'POST') {
+    logger.info('Received data from webhook:');
+    logger.info(JSON.stringify(req.body, null, 2));
+
+    const data = req.body.data;
+
+    // Process the webhook data
+    await processWebhookData(data);
+
+    // Send a response back to acknowledge receipt
+    res.status(200).json({ status: 'success' });
+  } else if (req.method === 'GET') {
+    // Handle GET request
+    logger.info('Received a GET request');
+    // You can add logic here to return some data or status
+    res.status(200).json({ message: 'GET request received' });
+  } else {
+    // Method not allowed
     res.status(405).json({ error: 'Method not allowed' });
-    return;
   }
-
-  logger.info('Received data from webhook:');
-  logger.info(JSON.stringify(req.body, null, 2));
-
-  const data = req.body.data;
-
-  // Process the webhook data
-  await processWebhookData(data);
-
-  // Send a response back to acknowledge receipt
-  res.status(200).json({ status: 'success' });
 }
