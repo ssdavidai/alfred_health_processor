@@ -86,6 +86,10 @@ async function processWebhookData(data) {
           continue;
         }
 
+        // Log existing dates for debugging
+        logger.debug(`Existing dates: ${Array.from(existingDates)}`);
+        logger.debug(`Checking for duplicate date: ${isoDate}`);
+
         // Check for duplicate date and time
         if (existingDates.has(isoDate)) {
           logger.warn(`Record with date "${isoDate}" already exists. Skipping record.`);
