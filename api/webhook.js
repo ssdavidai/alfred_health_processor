@@ -167,7 +167,11 @@ async function createTable(tableName, isSleepMetric = false) {
       {
         name: 'Date',
         type: 'dateTime',
-        options: { timeZone: 'utc', dateFormat: 'iso' },
+        options: {
+          timeZone: 'utc',
+          dateFormat: { name: 'iso' },
+          timeFormat: { name: '24hour' }
+        },
       },
       { name: 'Quantity', type: 'number' },
       { name: 'Units', type: 'singleLineText' },
@@ -189,22 +193,38 @@ async function createTable(tableName, isSleepMetric = false) {
         {
           name: 'Sleep Start',
           type: 'dateTime',
-          options: { timeZone: 'utc', dateFormat: 'iso' },
+          options: {
+            timeZone: 'utc',
+            dateFormat: { name: 'iso' },
+            timeFormat: { name: '24hour' }
+          },
         },
         {
           name: 'Sleep End',
           type: 'dateTime',
-          options: { timeZone: 'utc', dateFormat: 'iso' },
+          options: {
+            timeZone: 'utc',
+            dateFormat: { name: 'iso' },
+            timeFormat: { name: '24hour' }
+          },
         },
         {
           name: 'InBed Start',
           type: 'dateTime',
-          options: { timeZone: 'utc', dateFormat: 'iso' },
+          options: {
+            timeZone: 'utc',
+            dateFormat: { name: 'iso' },
+            timeFormat: { name: '24hour' }
+          },
         },
         {
           name: 'InBed End',
           type: 'dateTime',
-          options: { timeZone: 'utc', dateFormat: 'iso' },
+          options: {
+            timeZone: 'utc',
+            dateFormat: { name: 'iso' },
+            timeFormat: { name: '24hour' }
+          },
         },
       ];
       fields.push(...sleepFields);
