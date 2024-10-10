@@ -284,6 +284,11 @@ async function processWebhookData(data) {
   try {
     let existingTables = await getExistingTables();
 
+    // Initialize counters
+    let totalRecordsAdded = 0;
+    let totalTablesAdded = 0;
+    let totalRecordsSkipped = 0;
+
     for (const metric of metricsData) {
       logger.info(`Processing metric: ${JSON.stringify(metric)}`);
       const tableName = metric.name;
@@ -300,6 +305,7 @@ async function processWebhookData(data) {
         logger.info(`Table "${tableName}" does not exist. Creating table.`);
         await createTable(tableName, isSleepMetric(tableName));
         existingTables.push(tableName);
+        totalTablesAdded++; // Increment table count
       } else {
         logger.info(`Table "${tableName}" exists.`);
       }
@@ -314,13 +320,15 @@ async function processWebhookData(data) {
         const dateValue = record.date;
         if (!dateValue) {
           logger.warn('Record is missing "date". Skipping record.');
+          totalRecordsSkipped++; // Increment skipped record count
           continue;
         }
 
-        // Convert dateValue to ISO 8601 format
-        const isoDate = convertToISODate(dateValue);
+        // Convert dateValue to ISO 8601 format in UTC
+        const isoDate = new Date(dateValue).toISOString();
         if (!isoDate) {
           logger.warn(`Invalid date format for date "${dateValue}". Skipping record.`);
+          totalRecordsSkipped++; // Increment skipped record count
           continue;
         }
 
@@ -331,6 +339,7 @@ async function processWebhookData(data) {
         // Check for duplicate date and time
         if (existingDates.has(isoDate)) {
           logger.warn(`Record with date "${isoDate}" already exists. Skipping record.`);
+          totalRecordsSkipped++; // Increment skipped record count
           continue;
         }
 
@@ -376,10 +385,17 @@ async function processWebhookData(data) {
       if (recordsToAdd.length > 0) {
         logger.info(`Adding ${recordsToAdd.length} new record(s) to table "${tableName}".`);
         await createRecords(tableName, recordsToAdd);
+        totalRecordsAdded += recordsToAdd.length; // Increment added record count
       } else {
         logger.info(`No new records to add for metric "${tableName}".`);
       }
     }
+
+    // After processing all metrics, log the summary
+    logger.info(`Total records added: ${totalRecordsAdded}`);
+    logger.info(`Total tables created: ${totalTablesAdded}`);
+    logger.info(`Total records skipped: ${totalRecordsSkipped}`);
+    logger.info("This export is now complete. Cheers!");
 
     logger.info('Data processing completed successfully.');
   } catch (error) {
