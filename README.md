@@ -1,70 +1,127 @@
-# Getting Started with Create React App
+# Alfred - Health Data Processing
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This project is part of the larger Alfred project. I wrote about this extensively in my post titled ["Building My Own Butler"](https://lumberjack.so/p/building-my-own-butler). 
 
-## Available Scripts
+As a first step, I needed to get access to all my Apple Health data. This script is designed to capture any data via JSON payloads (I'm using Auto Health Export for that) and create new records in an Airtable base.
 
-In the project directory, you can run:
+## Airtable Webhook Processor
 
-### `npm start`
+This project is a Node.js application that processes data received from a webhook and interacts with Airtable to manage tables and records. It is built using Express.js and leverages the Airtable API to dynamically create tables and insert records based on incoming data.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Table of Contents
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- [Getting Started](#getting-started)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Running the Application](#running-the-application)
+- [Project Structure](#project-structure)
+- [Key Features](#key-features)
+- [Logging](#logging)
+- [Error Handling](#error-handling)
+- [Contributing](#contributing)
+- [License](#license)
 
-### `npm test`
+## Getting Started
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+These instructions will help you set up and run the project on your local machine for development and testing purposes.
 
-### `npm run build`
+## Prerequisites
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Before you begin, ensure you have met the following requirements:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- **Node.js**: You need Node.js installed on your machine. You can download it from [nodejs.org](https://nodejs.org/).
+- **npm**: Node.js package manager, which is installed with Node.js.
+- **Airtable Account**: You need an Airtable account and an API key to interact with the Airtable API.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Installation
 
-### `npm run eject`
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/your-username/your-repo-name.git
+   cd your-repo-name
+   ```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Configuration
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+1. **Environment Variables**: Create a `.env` file in the root directory of your project and add your Airtable API key and other necessary configurations. The `.env` file should look like this:
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+   ```
+   AIRTABLE_API_KEY=your_airtable_api_key
+   PORT=3000
+   ```
 
-## Learn More
+   Ensure that your `.env` file is included in your `.gitignore` to prevent it from being committed to your repository.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+2. **Airtable Base ID**: The application uses a specific Airtable base ID, which is hardcoded in the application. You can find this in the `src/App.js` file:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+   ```javascript:src/App.js
+   startLine: 23
+   endLine: 25
+   ```
 
-### Code Splitting
+   Replace `'appTV45bv5pf9icd3'` with your actual Airtable base ID.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Running the Application
 
-### Analyzing the Bundle Size
+To start the application, run the following command:
+   ```bash
+   npm start
+   ```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
 
-### Making a Progressive Web App
+This will start the server on the port specified in your `.env` file (default is 3000). You can access the webhook endpoint at `http://localhost:3000/webhook`.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## Project Structure
 
-### Advanced Configuration
+- **src/App.js**: The main application file where the Express server is set up and the webhook endpoint is defined.
+- **src/index.js**: The entry point for the React application, though this project primarily focuses on the backend.
+- **public/**: Contains static files and the HTML template.
+- **src/**: Contains the main application logic and styles.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## Key Features
 
-### Deployment
+- **Webhook Endpoint**: The application exposes a `/webhook` endpoint to receive data.
+  ```javascript:src/App.js
+  startLine: 339
+  endLine: 350
+  ```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+- **Airtable Integration**: The application interacts with Airtable to:
+  - Fetch existing tables.
+  - Create new tables if they do not exist.
+  - Insert new records into tables.
+  - Avoid duplicate entries by checking existing records.
 
-### `npm run build` fails to minify
+- **Dynamic Table Creation**: Tables are created dynamically based on the incoming data's metrics. If a metric is identified as sleep-related, additional fields are added to the table.
+  ```javascript:src/App.js
+  startLine: 71
+  endLine: 140
+  ```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- **Logging**: Uses Winston for logging various levels of information, including errors, warnings, and debug information.
+  ```javascript:src/App.js
+  startLine: 8
+  endLine: 19
+  ```
+
+## Logging
+
+The application uses Winston for logging. Logs are output to the console and a file named `server.log`. The log level is set to `debug` for detailed information.
+
+## Error Handling
+
+The application includes error handling for network requests and other operations. Errors are logged with detailed information to help with debugging.
+
+## Contributing
+
+Contributions are welcome! Please fork the repository and use a feature branch. Pull requests are reviewed on a regular basis.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
