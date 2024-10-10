@@ -1,5 +1,6 @@
 import { createLogger, transports, format } from 'winston';
 import axios from 'axios';
+import { DateTime } from 'luxon'; // Import Luxon
 
 // Configure winston logger
 const logger = createLogger({
@@ -76,13 +77,15 @@ async function processWebhookData(data) {
             continue;
           }
 
-          if (existingDates.has(dateValue)) {
-            logger.info(`Record with date "${dateValue}" already exists in table "${tableName}". Skipping.`);
+          // Convert dateValue to ISO 8601 format
+          const isoDate = convertToISODate(dateValue);
+          if (!isoDate) {
+            logger.warn(`Invalid date format for date "${dateValue}". Skipping record.`);
             continue;
           }
 
           const fields = {
-            Date: dateValue,
+            Date: isoDate,
             Quantity: record.qty,
             Units: units,
             Source: record.source || '',
@@ -360,6 +363,17 @@ function isSleepMetric(metricName) {
   const isSleep = sleepMetrics.includes(metricName);
   logger.info(`Metric "${metricName}" is ${isSleep ? '' : 'not '}identified as sleep-related.`);
   return isSleep;
+}
+
+// Function to convert date to ISO 8601 format
+function convertToISODate(dateStr) {
+  // Parse the date string using Luxon
+  const dt = DateTime.fromFormat(dateStr, 'yyyy-MM-dd HH:mm:ss ZZZ', { setZone: true });
+  if (!dt.isValid) {
+    return null;
+  }
+  // Return ISO 8601 formatted string
+  return dt.toISO();
 }
 
 export default async function handler(req, res) {
