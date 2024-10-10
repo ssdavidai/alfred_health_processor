@@ -83,23 +83,47 @@ async function createTable(tableName, isSleepMetric = false) {
           timeFormat: { name: '24hour' }
         },
       },
-      { name: 'Quantity', type: 'number' },
+      { 
+        name: 'Quantity', 
+        type: 'number',
+        options: {
+          precision: 8 // Specify the precision for the number field
+        }
+      },
       { name: 'Units', type: 'singleLineText' },
       { name: 'Source', type: 'singleLineText' },
-      { name: 'Min', type: 'number' },
-      { name: 'Max', type: 'number' },
-      { name: 'Avg', type: 'number' },
+      { 
+        name: 'Min', 
+        type: 'number',
+        options: {
+          precision: 8
+        }
+      },
+      { 
+        name: 'Max', 
+        type: 'number',
+        options: {
+          precision: 8
+        }
+      },
+      { 
+        name: 'Avg', 
+        type: 'number',
+        options: {
+          precision: 8
+        }
+      },
     ];
 
     if (isSleepMetric) {
       logger.info(`Metric "${tableName}" is identified as sleep-related. Adding sleep-specific fields.`);
       const sleepFields = [
-        { name: 'Asleep', type: 'number' },
-        { name: 'InBed', type: 'number' },
-        { name: 'Awake', type: 'number' },
-        { name: 'Core', type: 'number' },
-        { name: 'Deep', type: 'number' },
-        { name: 'Rem', type: 'number' },
+        { name: 'Asleep', type: 'number', options: { precision: 8 } },
+        { name: 'InBed', type: 'number', options: { precision: 8 } },
+        { name: 'Awake', type: 'number', options: { precision: 8 } },
+        { name: 'Core', type: 'number', options: { precision: 8 } },
+        { name: 'Deep', type: 'number', options: { precision: 8 } },
+        { name: 'Rem', type: 'number', options: { precision: 8 } },
         {
           name: 'Sleep Start',
           type: 'dateTime',
